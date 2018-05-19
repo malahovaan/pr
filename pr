@@ -1,0 +1,109 @@
+from tkinter import *
+import random
+
+wd = 900
+ht = 500
+rw = 25
+rh = 100
+ballspeed = 1.01
+ballmspeed = 15
+radius = 20
+speed = 5
+bspx= speed
+bspy = speed
+rspeed = 20
+lrsp = 0
+rrsp = 0
+distance = wd - rw
+
+def spawn_ball():
+    global bspx
+    c.coords(ball, 440, 240 ,440,240)
+    bspx = -(bspx * -speed) / abs(bspx)
+
+def bounce(action):
+    global bspx, bspy
+    if action == "strike":
+        bspy = random.randrange(-10, 10)
+        if abs(bspx) < ballmspeed:
+            bspx *= -ballspeed
+        else:
+            bspx = -bspx
+    else:
+        bspy = -bspy
+
+
+root = Tk()
+root.title("Пинг-Понг")
+c = Canvas(root, width=900, height=500, background="pink")
+c.pack()
+c.create_line(rw, 0, rw, ht, fill="white")
+c.create_line(wd - rw, 0, wd - rw, ht, fill="white")
+c.create_line(wd / 2, 0, wd / 2, ht, fill="white")
+ball = c.create_oval(wd/2-radius/2, ht/2-radius/2, wd/2+radius/2, ht/2+radius/2, fill="white")
+lr = c.create_line(rw / 2, 0, rw / 2, rh, width=rw, fill="red")
+rr = c.create_line(wd - rw / 2, 0, wd - rw / 2,rh, width=rw, fill="red")
+
+def move_ball():
+    ball_left, ball_top, ball_right, ball_bot = c.coords(ball)
+    ball_center = (ball_top + ball_bot) / 2
+    if ball_right + bspx < distance and ball_left + bspx > rw:
+        c.move(ball, bspx, bspy)
+    elif ball_right == distance or ball_left == rw:
+        if ball_right > wd / 2:
+            if c.coords(rr)[1] < ball_center < c.coords(rr)[3]:
+                bounce("strike")
+            else:
+                spawn_ball()
+        else:
+            if c.coords(lr)[1] < ball_center < c.coords(lr)[3]:
+                bounce("strike")
+            else:
+                spawn_ball()
+    else:
+        if ball_right > wd / 2:
+            c.move(ball, distance - ball_right, bspy)
+        else:
+            c.move(ball, -ball_left + rw, bspy)
+    if ball_top + bspy < 0 or ball_bot + bspy > ht:
+        bounce("ricochet")
+
+def move_rak():
+    rak = {lr: lrsp,
+            rr: rrsp}
+    for rake in rak:
+        c.move(rake, 0, rak[rake])
+        if c.coords(rake)[1] < 0:
+            c.move(rake, 0, -c.coords(rake)[1])
+        elif c.coords(rake)[3] > ht:
+            c.move(rake, 0, ht - c.coords(rake)[3])
+
+def main():
+    move_ball()
+    move_rak()
+    root.after(30, main)
+
+c.focus_set()
+
+def movement(event):
+    global lrsp, rrsp
+    if event.keysym == "w":
+        lrsp = -rspeed
+    elif event.keysym == "s":
+        lrsp = rspeed
+    elif event.keysym == "Up":
+        rrsp = -rspeed
+    elif event.keysym == "Down":
+        rrsp = rspeed
+c.bind("<KeyPress>", movement)
+
+def stop_rak(event):
+    global lrsp, rrsp
+    if event.keysym in "ws":
+        lrsp = 0
+    elif event.keysym in ("Up", "Down"):
+        rrsp = 0
+c.bind("<KeyRelease>", stop_rak)
+
+main()
+root.mainloop()
